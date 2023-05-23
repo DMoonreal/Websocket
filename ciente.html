@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chat con WebSockets</title>
+</head>
+<body>
+    <div id="chat">
+        <input type="text" id="username" placeholder="Ingresa tu nombre de usuario">
+        <button id="connectBtn">Conectar</button>
+        <div id="messages"></div>
+        <input type="text" id="messageInput" placeholder="Escribe un mensaje">
+        <button id="sendBtn">Enviar</button>
+        <div id="mensajesdeusuarios"></div>
+    </div>
+
+    <script>
+        const chatDiv = document.getElementById('chat');
+        const usernameInput = document.getElementById('username');
+        const connectBtn = document.getElementById('connectBtn');
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const messagesUser = document.getElementById('mensajesdeusuarios');
+
+        let websocket;
+
+        function showMessage(message) {
+            const messageElement = document.createElement('p');
+            messageElement.innerText = message;
+            messagesDiv.appendChild(messageElement);
+        }
+        function showMessageUsers(message) {
+            const messageElement = document.createElement('p');
+            messageElement.innerText = message;
+            messagesUser.appendChild(messageElement);
+        }
+
+        function connectToChat() {
+            const username = usernameInput.value.trim();
+            if (username !== '') {
+                websocket = new WebSocket('ws://localhost:8080');
+
+                websocket.onopen = function () {
+                    // Socket abierto
+                    showMessage('Conectado al chat. Esperando bienvenida...');
+                };
+                const usuarios = {};
+                websocket.onmessage = function (event) {
+                    // Mensaje recibido del servidor
+                    const message = event.data;
+                    
+                    showMessage(message);
+                };
+
+                websocket.onclose = function () {
+                    // Socket cerrado
+                    showMessage('Conexión cerrada. Puedes recargar la página para volver a conectarte.');
+                    usernameInput.disabled = true;
+                    connectBtn.disabled = true;
+                    messageInput.disabled = true;
+                    sendBtn.disabled = true;
+                };
+
+                connectBtn.disabled = true;
+                usernameInput.disabled = true;
+                messageInput.disabled = false;
+                sendBtn.disabled = false;
+            }
+        }
+
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (message !== '') {
+                const formattedMessage = `[${getCurrentTime()}] ${usernameInput.value}: ${message}`;
+                websocket.send(formattedMessage);
+                showMessageUsers(formattedMessage);
+                messageInput.value = '';
+            }
+        }
+
+        function getCurrentTime() {
+            const now = new Date();
+            return now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+        }
+
+        connectBtn.addEventListener('click', connectToChat);
+        sendBtn.addEventListener('click', sendMessage);
+    </script>
+</body>
+</html>
